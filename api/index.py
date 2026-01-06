@@ -87,11 +87,9 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
             timeout=10
         )
         # Notion returns 200 for success
-        if response.status_code == 200:
-            return True
-        else:
-            print(f"Notion API error: {response.status_code} - {response.text}")
-            return False
+        success = response.status_code == 200
+        print(f"Notion response: {response.status_code} - success: {success}")
+        return success
     except Exception as e:
         print(f"Notion error: {e}")
         return False
@@ -143,6 +141,8 @@ class handler(BaseHTTPRequestHandler):
             keywords = data.get('keywords', [])
             export_notion = data.get('export_notion', False)
 
+            print(f"Analyze request: keywords={keywords}, export_notion={export_notion}")
+
             results = []
             exported = 0
 
@@ -168,8 +168,10 @@ class handler(BaseHTTPRequestHandler):
 
                 # Export to Notion if requested
                 if export_notion:
+                    print(f"Exporting {kw} to Notion...")
                     if export_to_notion(kw, gap_score, demand_score, supply_score, suggestion_count):
                         exported += 1
+                        print(f"Exported {kw} successfully")
 
             self.wfile.write(json.dumps({
                 "results": results,
