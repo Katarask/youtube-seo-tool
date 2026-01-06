@@ -49,15 +49,15 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
     if not notion_key or not notion_db:
         return False
 
-    # Determine rating
+    # Determine rating (matching existing database options)
     if gap_score >= 7:
-        rating = "Excellent"
+        rating = "🟢 Excellent"
         icon = "🟢"
     elif gap_score >= 4:
-        rating = "Good"
+        rating = "🟡 Good"
         icon = "🟡"
     else:
-        rating = "Poor"
+        rating = "🔴 Poor"
         icon = "🔴"
 
     try:
@@ -76,9 +76,9 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
                     "Gap Score": {"number": gap_score},
                     "Demand Score": {"number": demand_score},
                     "Supply Score": {"number": supply_score},
-                    "Suggestions": {"number": suggestion_count},
+                    "Suggestions Count": {"number": suggestion_count},
                     "Rating": {"select": {"name": rating}},
-                    "Analyzed": {"date": {"start": datetime.now().isoformat()}}
+                    "Analyzed At": {"date": {"start": datetime.now().isoformat()}}
                 }
             },
             timeout=10
