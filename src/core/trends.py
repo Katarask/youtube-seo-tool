@@ -8,6 +8,11 @@ import pandas as pd
 from ..data.models import TrendData
 from ..data.cache import cache
 from ..utils.rate_limiter import rate_limiters
+from ..utils.logger import trends_logger as logger
+from ..constants import (
+    CACHE_TTL_TRENDS,
+    TREND_DEFAULT_INTEREST,
+)
 
 # Import pytrends with error handling
 try:
@@ -15,7 +20,7 @@ try:
     PYTRENDS_AVAILABLE = True
 except ImportError:
     PYTRENDS_AVAILABLE = False
-    print("Warning: pytrends not installed. Google Trends features disabled.")
+    logger.warning("pytrends not installed. Google Trends features disabled.")
 
 
 class TrendsAPI:
@@ -157,17 +162,18 @@ class TrendsAPI:
                 "average_interest": trend_data.average_interest,
                 "trend_direction": trend_data.trend_direction,
                 "peak_month": trend_data.peak_month,
-            }, ttl_hours=24)
-            
+            }, ttl_hours=CACHE_TTL_TRENDS)
+
+            logger.debug(f"Trends for '{keyword}': avg={trend_data.average_interest:.1f}, dir={trend_data.trend_direction:.1f}%")
             return trend_data
-            
+
         except Exception as e:
-            print(f"Error fetching trends for '{keyword}': {e}")
+            logger.error(f"Error fetching trends for '{keyword}': {e}")
             # Return a default TrendData instead of None
             return TrendData(
                 keyword=keyword,
                 interest_over_time=[],
-                average_interest=50,  # Assume middle value
+                average_interest=TREND_DEFAULT_INTEREST,
                 trend_direction=0,
             )
     
@@ -278,14 +284,14 @@ class TrendsAPI:
                     "average_interest": trend_data.average_interest,
                     "trend_direction": trend_data.trend_direction,
                     "peak_month": trend_data.peak_month,
-                }, ttl_hours=24)
-            
+                }, ttl_hours=CACHE_TTL_TRENDS)
+
             return results
-            
+
         except Exception as e:
-            print(f"Error comparing keywords: {e}")
+            logger.error(f"Error comparing keywords: {e}")
             for kw in uncached:
-                results[kw] = TrendData(keyword=kw, average_interest=50)
+                results[kw] = TrendData(keyword=kw, average_interest=TREND_DEFAULT_INTEREST)
             return results
     
     def get_related_queries(
@@ -336,11 +342,11 @@ class TrendsAPI:
                 if kw_data.get("rising") is not None and not kw_data["rising"].empty:
                     result["rising"] = kw_data["rising"].to_dict("records")
             
-            cache.set("trends_related", cache_key, result, ttl_hours=24)
+            cache.set("trends_related", cache_key, result, ttl_hours=CACHE_TTL_TRENDS)
             return result
-            
+
         except Exception as e:
-            print(f"Error getting related queries for '{keyword}': {e}")
+            logger.error(f"Error getting related queries for '{keyword}': {e}")
             return {"top": [], "rising": []}
 
 
@@ -360,7 +366,7 @@ def get_youtube_trends(
         TrendData object or None
     """
     if not PYTRENDS_AVAILABLE:
-        return TrendData(keyword=keyword, average_interest=50)
+        return TrendData(keyword=keyword, average_interest=TREND_DEFAULT_INTEREST)
     
     api = TrendsAPI()
     return api.get_trend_data(keyword, timeframe)

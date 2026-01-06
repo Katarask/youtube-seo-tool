@@ -9,6 +9,8 @@ from urllib.parse import quote
 from ..data.models import KeywordSuggestion
 from ..data.cache import cache
 from ..utils.rate_limiter import rate_limiters
+from ..utils.logger import logger
+from ..constants import MAX_RELATED_SEARCHES_PER_BATCH
 
 
 class AutocompleteScraper:
@@ -59,9 +61,9 @@ class AutocompleteScraper:
                 return [item[0] for item in data[1] if item]
             
             return []
-            
+
         except Exception as e:
-            print(f"Error fetching autocomplete for '{query}': {e}")
+            logger.error(f"Error fetching autocomplete for '{query}': {e}")
             return []
     
     def get_suggestions(
@@ -207,7 +209,7 @@ class AutocompleteScraper:
                         discovered[key] = s
                         next_batch.append(s.keyword)
             
-            to_process = next_batch[:20]  # Limit to prevent explosion
+            to_process = next_batch[:MAX_RELATED_SEARCHES_PER_BATCH]  # Limit to prevent explosion
         
         return list(discovered.values())
 

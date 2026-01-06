@@ -16,6 +16,12 @@ from .autocomplete import AutocompleteScraper
 from .youtube_api import YouTubeAPI
 from .trends import TrendsAPI, PYTRENDS_AVAILABLE
 from ..utils.config import config
+from ..utils.logger import logger
+from ..utils.validators import validate_keyword, validate_keywords, ValidationError
+from ..constants import (
+    TREND_DEFAULT_INTEREST,
+    MAX_SUGGESTIONS_TO_ANALYZE,
+)
 
 
 class KeywordAnalyzer:
@@ -41,13 +47,13 @@ class KeywordAnalyzer:
             self.youtube = YouTubeAPI(api_key)
         else:
             self.youtube = None
-            print("Warning: No YouTube API key. Some features will be limited.")
-        
+            logger.warning("No YouTube API key. Some features will be limited.")
+
         if PYTRENDS_AVAILABLE:
             self.trends = TrendsAPI()
         else:
             self.trends = None
-            print("Warning: pytrends not available. Trend data will use defaults.")
+            logger.warning("pytrends not available. Trend data will use defaults.")
     
     def analyze_keyword(
         self,
@@ -58,16 +64,23 @@ class KeywordAnalyzer:
     ) -> KeywordAnalysis:
         """
         Perform comprehensive analysis on a keyword.
-        
+
         Args:
             keyword: The keyword to analyze
             include_suggestions: Whether to fetch autocomplete suggestions
             expand_suggestions: Whether to do prefix/suffix expansion
             use_cache: Whether to use cached results
-            
+
         Returns:
             KeywordAnalysis object with all metrics
+
+        Raises:
+            ValidationError: If keyword is invalid
         """
+        # Validate and sanitize keyword
+        keyword = validate_keyword(keyword)
+        logger.debug(f"Analyzing keyword: {keyword}")
+
         analysis = KeywordAnalysis(keyword=keyword)
         
         # 1. Get autocomplete suggestions
@@ -90,11 +103,11 @@ class KeywordAnalyzer:
             # Default trend data if pytrends not available
             analysis.trend_data = TrendData(
                 keyword=keyword,
-                average_interest=50,  # Assume middle value
+                average_interest=TREND_DEFAULT_INTEREST,
                 trend_direction=0,
             )
-        
-        trend_index = analysis.trend_data.average_interest if analysis.trend_data else 50
+
+        trend_index = analysis.trend_data.average_interest if analysis.trend_data else TREND_DEFAULT_INTEREST
         
         # 3. Get YouTube demand data
         if self.youtube:
@@ -123,7 +136,8 @@ class KeywordAnalyzer:
                 small_channels_in_top_10=0,
                 avg_video_age_days=0,
             )
-        
+
+        logger.debug(f"Analysis complete for '{keyword}': gap_score={analysis.gap_score:.2f}")
         return analysis
     
     def analyze_keywords(
@@ -135,16 +149,23 @@ class KeywordAnalyzer:
     ) -> list[KeywordAnalysis]:
         """
         Analyze multiple keywords.
-        
+
         Args:
             keywords: List of keywords to analyze
             include_suggestions: Whether to fetch suggestions (slower)
             use_cache: Whether to use cached results
             progress_callback: Optional callback function(current, total, keyword)
-            
+
         Returns:
             List of KeywordAnalysis objects
+
+        Raises:
+            ValidationError: If any keyword is invalid
         """
+        # Validate all keywords upfront
+        keywords = validate_keywords(keywords)
+        logger.info(f"Analyzing {len(keywords)} keywords")
+
         results = []
         total = len(keywords)
         
@@ -194,7 +215,7 @@ class KeywordAnalyzer:
         )
         
         # Limit to avoid quota exhaustion
-        keywords_to_analyze = [seed_keyword] + [s.keyword for s in suggestions[:30]]
+        keywords_to_analyze = [seed_keyword] + [s.keyword for s in suggestions[:MAX_SUGGESTIONS_TO_ANALYZE]]
         
         # Analyze all keywords
         results = self.analyze_keywords(

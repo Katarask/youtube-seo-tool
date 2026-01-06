@@ -1,6 +1,6 @@
 """YouTube Data API v3 handler for video and channel data."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -9,6 +9,25 @@ from ..data.models import VideoInfo, DemandMetrics, SupplyMetrics
 from ..data.cache import cache
 from ..utils.config import config
 from ..utils.rate_limiter import rate_limiters
+from ..utils.logger import api_logger as logger
+from ..constants import (
+    YOUTUBE_SEARCH_QUOTA_COST,
+    YOUTUBE_VIDEO_QUOTA_COST,
+    YOUTUBE_CHANNEL_QUOTA_COST,
+    YOUTUBE_MAX_RESULTS,
+    YOUTUBE_BATCH_SIZE,
+    CACHE_TTL_SEARCH,
+    CACHE_TTL_VIDEO,
+    CACHE_TTL_CHANNEL,
+    SMALL_CHANNEL_SUBSCRIBER_THRESHOLD,
+    SUPPLY_ANALYSIS_DAYS,
+    RECENT_VIDEO_DAYS,
+)
+
+
+def _utc_now() -> datetime:
+    """Get current UTC time as timezone-naive datetime for consistency."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class YouTubeAPI:
@@ -55,13 +74,16 @@ class YouTubeAPI:
             published_after: Filter by publish date
             published_before: Filter by publish date
             use_cache: Whether to use cached results
-            
+
         Returns:
             List of video data dictionaries
-            
+
         Quota cost: 100 units per call
         """
-        cache_key = f"{keyword}_{order}_{max_results}_{published_after}_{published_before}"
+        # Create stable cache key using ISO format for dates
+        after_str = published_after.isoformat() if published_after else "none"
+        before_str = published_before.isoformat() if published_before else "none"
+        cache_key = f"{keyword}_{order}_{max_results}_{after_str}_{before_str}"
         
         if use_cache:
             cached = cache.get("search", cache_key)
@@ -75,7 +97,7 @@ class YouTubeAPI:
                 "q": keyword,
                 "part": "snippet",
                 "type": "video",
-                "maxResults": min(max_results, 50),
+                "maxResults": min(max_results, YOUTUBE_MAX_RESULTS),
                 "order": order,
             }
             
@@ -86,8 +108,9 @@ class YouTubeAPI:
             
             request = self.youtube.search().list(**request_params)
             response = request.execute()
-            
-            self._track_quota(100)
+
+            self._track_quota(YOUTUBE_SEARCH_QUOTA_COST)
+            logger.debug(f"Search for '{keyword}' returned {len(response.get('items', []))} results")
             
             videos = []
             for item in response.get("items", []):
@@ -101,12 +124,12 @@ class YouTubeAPI:
                 })
             
             if videos:
-                cache.set("search", cache_key, videos, ttl_hours=12)
-            
+                cache.set("search", cache_key, videos, ttl_hours=CACHE_TTL_SEARCH)
+
             return videos
-            
+
         except HttpError as e:
-            print(f"YouTube API error: {e}")
+            logger.error(f"YouTube API search error for '{keyword}': {e}")
             return []
     
     def get_video_details(
@@ -147,11 +170,12 @@ class YouTubeAPI:
             # Batch request (up to 50 IDs)
             request = self.youtube.videos().list(
                 part="snippet,statistics",
-                id=",".join(uncached_ids[:50])
+                id=",".join(uncached_ids[:YOUTUBE_BATCH_SIZE])
             )
             response = request.execute()
-            
-            self._track_quota(1)
+
+            self._track_quota(YOUTUBE_VIDEO_QUOTA_COST)
+            logger.debug(f"Fetched details for {len(response.get('items', []))} videos")
             
             for item in response.get("items", []):
                 stats = item.get("statistics", {})
@@ -182,12 +206,12 @@ class YouTubeAPI:
                     "view_count": video_info.view_count,
                     "like_count": video_info.like_count,
                     "comment_count": video_info.comment_count,
-                })
-            
+                }, ttl_hours=CACHE_TTL_VIDEO)
+
             return results
-            
+
         except HttpError as e:
-            print(f"YouTube API error: {e}")
+            logger.error(f"YouTube API video details error: {e}")
             return results
     
     def get_channel_subscribers(
@@ -225,26 +249,27 @@ class YouTubeAPI:
         
         try:
             # Deduplicate
-            unique_ids = list(set(uncached_ids))[:50]
-            
+            unique_ids = list(set(uncached_ids))[:YOUTUBE_BATCH_SIZE]
+
             request = self.youtube.channels().list(
                 part="statistics",
                 id=",".join(unique_ids)
             )
             response = request.execute()
-            
-            self._track_quota(1)
-            
+
+            self._track_quota(YOUTUBE_CHANNEL_QUOTA_COST)
+            logger.debug(f"Fetched subscriber counts for {len(response.get('items', []))} channels")
+
             for item in response.get("items", []):
                 channel_id = item["id"]
                 subs = int(item.get("statistics", {}).get("subscriberCount", 0))
                 results[channel_id] = subs
-                cache.set("channel_subs", channel_id, subs, ttl_hours=48)
-            
+                cache.set("channel_subs", channel_id, subs, ttl_hours=CACHE_TTL_CHANNEL)
+
             return results
-            
+
         except HttpError as e:
-            print(f"YouTube API error: {e}")
+            logger.error(f"YouTube API channel error: {e}")
             return results
     
     def analyze_keyword_supply(
@@ -272,24 +297,24 @@ class YouTubeAPI:
             cached = cache.get("supply", cache_key)
             if cached:
                 return SupplyMetrics(**cached)
-        
-        now = datetime.utcnow()
-        
+
+        now = _utc_now()
+
         # Videos in last 30 days
         videos_30d = self.search_videos(
             keyword,
-            max_results=50,
+            max_results=YOUTUBE_MAX_RESULTS,
             order="date",
-            published_after=now - timedelta(days=30),
+            published_after=now - timedelta(days=SUPPLY_ANALYSIS_DAYS),
             use_cache=use_cache
         )
-        
+
         # Videos in last 7 days
         videos_7d = self.search_videos(
             keyword,
-            max_results=50,
+            max_results=YOUTUBE_MAX_RESULTS,
             order="date",
-            published_after=now - timedelta(days=7),
+            published_after=now - timedelta(days=RECENT_VIDEO_DAYS),
             use_cache=use_cache
         )
         
@@ -315,7 +340,10 @@ class YouTubeAPI:
             
             # Calculate metrics
             avg_subs = sum(v.subscriber_count or 0 for v in top_videos) / len(top_videos)
-            small_channels = sum(1 for v in top_videos if (v.subscriber_count or 0) < 10000)
+            small_channels = sum(
+                1 for v in top_videos
+                if (v.subscriber_count or 0) < SMALL_CHANNEL_SUBSCRIBER_THRESHOLD
+            )
             avg_age = sum(v.age_days for v in top_videos) / len(top_videos)
         else:
             avg_subs = 0
@@ -337,7 +365,9 @@ class YouTubeAPI:
             "avg_channel_subscribers": metrics.avg_channel_subscribers,
             "small_channels_in_top_10": metrics.small_channels_in_top_10,
             "avg_video_age_days": metrics.avg_video_age_days,
-        }, ttl_hours=12)
+        }, ttl_hours=CACHE_TTL_SEARCH)
+
+        logger.debug(f"Supply analysis for '{keyword}': {metrics.videos_last_30_days} videos/30d")
         
         return metrics
     
