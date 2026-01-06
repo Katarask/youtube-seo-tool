@@ -178,7 +178,12 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "results": results,
                 "exported": exported,
-                "quota_used": 0
+                "quota_used": 0,
+                "debug": {
+                    "export_requested": export_notion,
+                    "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
+                    "notion_db_set": bool(os.getenv("NOTION_DATABASE_ID"))
+                }
             }).encode())
 
         elif self.path == '/api/suggestions':
