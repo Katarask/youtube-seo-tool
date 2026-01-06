@@ -3,8 +3,10 @@
 import click
 from rich.console import Console
 from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.panel import Panel
+from rich.prompt import Prompt, Confirm
+from rich import print as rprint
 from pathlib import Path
 
 from .core.analyzer import KeywordAnalyzer
@@ -165,9 +167,188 @@ def cache_stats():
 def cache_clear():
     """Clear all cached data."""
     from .data.cache import cache
-    
+
     cache.clear_all()
     console.print("[green]✓ Cache cleared[/green]")
+
+
+@cli.command()
+def interactive():
+    """Interactive mode with menu-driven analysis."""
+    console.print(Panel.fit(
+        "[bold red]YOUTUBE[/bold red] SEO Tool\n"
+        "[dim]Interaktiver Modus[/dim]",
+        border_style="red"
+    ))
+
+    while True:
+        console.print("\n[bold]Was moechtest du tun?[/bold]\n")
+        console.print("  [cyan]1[/cyan] - Keywords analysieren")
+        console.print("  [cyan]2[/cyan] - Autocomplete Vorschlaege")
+        console.print("  [cyan]3[/cyan] - Opportunities finden")
+        console.print("  [cyan]4[/cyan] - Cache Status")
+        console.print("  [cyan]q[/cyan] - Beenden\n")
+
+        choice = Prompt.ask("Auswahl", choices=["1", "2", "3", "4", "q"], default="1")
+
+        if choice == "q":
+            console.print("[dim]Auf Wiedersehen![/dim]")
+            break
+
+        elif choice == "1":
+            _interactive_analyze()
+
+        elif choice == "2":
+            _interactive_autocomplete()
+
+        elif choice == "3":
+            _interactive_opportunities()
+
+        elif choice == "4":
+            cache_stats.callback()
+
+
+def _interactive_analyze():
+    """Interactive keyword analysis."""
+    if not config.youtube_api_key:
+        console.print("[red]Error: YOUTUBE_API_KEY nicht gesetzt[/red]")
+        return
+
+    console.print("\n[bold]Keywords eingeben[/bold] (kommagetrennt oder Enter fuer einzeln):")
+    keywords_input = Prompt.ask("Keywords")
+
+    if not keywords_input.strip():
+        return
+
+    # Parse keywords
+    if "," in keywords_input:
+        keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
+    else:
+        keywords = [keywords_input.strip()]
+
+    # Options
+    expand = Confirm.ask("Keywords erweitern?", default=False)
+    export_notion = Confirm.ask("Nach Notion exportieren?", default=False) if config.notion_api_key else False
+
+    analyzer = KeywordAnalyzer()
+    results = []
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Analysiere...", total=len(keywords))
+
+        for keyword in keywords:
+            progress.update(task, description=f"[cyan]{keyword}[/cyan]")
+
+            analysis = analyzer.analyze_keyword(
+                keyword,
+                include_suggestions=True,
+                expand_suggestions=expand,
+            )
+            results.append(analysis)
+            progress.advance(task)
+
+    results.sort(key=lambda x: x.gap_score, reverse=True)
+    _display_results(results)
+
+    # Export options
+    if export_notion and results:
+        _export_to_notion(results)
+
+    if Confirm.ask("\nAls CSV speichern?", default=False):
+        filename = generate_csv_filename(keywords[0] if keywords else "analysis")
+        path = export_to_csv(results, filename)
+        console.print(f"[green]✓ Gespeichert: {path}[/green]")
+
+    # Copy to clipboard option
+    if results and Confirm.ask("Bestes Keyword kopieren?", default=False):
+        try:
+            import subprocess
+            best = results[0].keyword
+            subprocess.run(['xclip', '-selection', 'clipboard'], input=best.encode(), check=True)
+            console.print(f"[green]✓ Kopiert: {best}[/green]")
+        except Exception:
+            console.print(f"[yellow]Kopieren nicht moeglich. Bestes Keyword: {results[0].keyword}[/yellow]")
+
+    console.print(f"\n[dim]API Quota: ~{analyzer.quota_used} Einheiten[/dim]")
+
+
+def _interactive_autocomplete():
+    """Interactive autocomplete."""
+    keyword = Prompt.ask("\n[bold]Seed Keyword[/bold]")
+    if not keyword.strip():
+        return
+
+    expand = Confirm.ask("Erweitern (Prefix/Suffix)?", default=False)
+
+    with console.status(f"Lade Vorschlaege fuer '{keyword}'..."):
+        suggestions = scrape_autocomplete(keyword, expand=expand)
+
+    if not suggestions:
+        console.print("[yellow]Keine Vorschlaege gefunden[/yellow]")
+        return
+
+    table = Table(title=f"Vorschlaege fuer: {keyword}")
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Keyword", style="cyan")
+    table.add_column("Position", style="green", justify="right")
+
+    for i, s in enumerate(suggestions[:30], 1):
+        table.add_row(str(i), s.keyword, str(s.position))
+
+    console.print(table)
+    console.print(f"\n[dim]Gesamt: {len(suggestions)} Vorschlaege[/dim]")
+
+    # Option to analyze selected ones
+    if Confirm.ask("\nVorschlaege analysieren?", default=False):
+        indices = Prompt.ask("Nummern (kommagetrennt, z.B. 1,3,5)", default="1")
+        try:
+            selected = [int(i.strip()) - 1 for i in indices.split(",")]
+            selected_keywords = [suggestions[i].keyword for i in selected if 0 <= i < len(suggestions)]
+            if selected_keywords and config.youtube_api_key:
+                analyzer = KeywordAnalyzer()
+                results = [analyzer.analyze_keyword(kw) for kw in selected_keywords]
+                results.sort(key=lambda x: x.gap_score, reverse=True)
+                _display_results(results)
+        except (ValueError, IndexError):
+            console.print("[red]Ungueltige Eingabe[/red]")
+
+
+def _interactive_opportunities():
+    """Interactive opportunity finder."""
+    if not config.youtube_api_key:
+        console.print("[red]Error: YOUTUBE_API_KEY nicht gesetzt[/red]")
+        return
+
+    seed = Prompt.ask("\n[bold]Seed Keyword[/bold]")
+    if not seed.strip():
+        return
+
+    min_score = float(Prompt.ask("Minimum Gap Score", default="5.0"))
+    max_results = int(Prompt.ask("Max Ergebnisse", default="20"))
+
+    analyzer = KeywordAnalyzer()
+
+    with console.status(f"Suche Opportunities fuer '{seed}'..."):
+        results = analyzer.find_opportunities(
+            seed,
+            min_gap_score=min_score,
+            max_results=max_results
+        )
+
+    if not results:
+        console.print(f"[yellow]Keine Opportunities mit Score >= {min_score}[/yellow]")
+        return
+
+    _display_results(results)
+
+    if Confirm.ask("\nNach Notion exportieren?", default=False) and config.notion_api_key:
+        _export_to_notion(results)
 
 
 def _display_results(results):

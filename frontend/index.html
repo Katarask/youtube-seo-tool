@@ -6,7 +6,6 @@
     <title>YOUTUBE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/framer-motion@11.0.8/dist/framer-motion.js"></script>
     <style>
         * { font-family: 'Space Grotesk', sans-serif; }
 
@@ -23,9 +22,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .glow {
-            box-shadow: 0 0 60px rgba(255, 0, 0, 0.15);
-        }
+        .glow { box-shadow: 0 0 60px rgba(255, 0, 0, 0.15); }
 
         .card-hover {
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -36,23 +33,21 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .input-glow:focus {
-            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2);
-        }
+        .input-glow:focus { box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2); }
 
         .btn-primary {
             background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             transition: all 0.3s ease;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: scale(1.02);
             box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
         }
 
-        .chip {
-            transition: all 0.2s ease;
-        }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .chip { transition: all 0.2s ease; }
 
         .chip:hover {
             background: rgba(255, 0, 0, 0.15);
@@ -64,9 +59,7 @@
         .score-glow-yellow { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
         .score-glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
 
-        .fade-up {
-            animation: fadeUp 0.6s ease-out forwards;
-        }
+        .fade-up { animation: fadeUp 0.6s ease-out forwards; }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(30px); }
@@ -86,13 +79,9 @@
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .pulse-dot {
-            animation: pulse 2s ease-in-out infinite;
-        }
+        .pulse-dot { animation: pulse 2s ease-in-out infinite; }
 
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
@@ -109,8 +98,56 @@
             to { opacity: 1; transform: translateX(0); }
         }
 
-        .hero-bg {
-            background: radial-gradient(ellipse at top, rgba(255,0,0,0.08) 0%, transparent 50%);
+        .hero-bg { background: radial-gradient(ellipse at top, rgba(255,0,0,0.08) 0%, transparent 50%); }
+
+        .copy-btn { opacity: 0; transition: opacity 0.2s; }
+        .result-item:hover .copy-btn { opacity: 1; }
+
+        .insights-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .insights-content.open { max-height: 200px; }
+
+        .history-item:hover { background: rgba(255, 0, 0, 0.1); }
+
+        .kbd {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            animation: toastIn 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255,0,0,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF0000, #FF4444);
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -120,11 +157,13 @@
 
         <!-- Hero -->
         <div class="text-center mb-16 fade-up">
-            <h1 class="text-8xl font-bold gradient-text tracking-tight mb-4">
-                YOUTUBE
-            </h1>
+            <h1 class="text-8xl font-bold gradient-text tracking-tight mb-4">YOUTUBE</h1>
             <p class="text-xl text-zinc-500 font-medium">
                 Finde unterversorgte Nischen. Dominiere den Algorithmus.
+            </p>
+            <p class="text-sm text-zinc-600 mt-2">
+                <span class="kbd">Enter</span> Analysieren &nbsp;
+                <span class="kbd">Esc</span> Abbrechen
             </p>
         </div>
 
@@ -148,9 +187,17 @@
                     type="text"
                     id="suggestionInput"
                     class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-5 py-4 text-lg text-white placeholder-zinc-600 focus:border-red-500 focus:outline-none input-glow transition-all"
-                    placeholder="Tippe um Vorschlaege zu laden..."
-                    onkeyup="getSuggestions()">
+                    placeholder="Tippe um Vorschlaege zu laden...">
                 <div id="suggestions" class="flex flex-wrap gap-3 mt-4"></div>
+            </div>
+
+            <!-- Search History -->
+            <div id="historySection" class="mb-8 hidden">
+                <label class="block text-sm font-semibold text-zinc-400 mb-3 uppercase tracking-wider">
+                    Letzte Suchen
+                    <button onclick="clearHistory()" class="text-red-400 text-xs ml-2 hover:text-red-300">(loeschen)</button>
+                </label>
+                <div id="historyList" class="flex flex-wrap gap-2"></div>
             </div>
 
             <!-- Options -->
@@ -177,14 +224,48 @@
             </button>
         </div>
 
-        <!-- Loading -->
-        <div id="loading" class="hidden text-center py-16">
-            <div class="spinner mx-auto mb-6"></div>
-            <div class="text-zinc-500 text-lg">Analysiere Keywords...</div>
+        <!-- Loading with Progress -->
+        <div id="loading" class="hidden mt-10">
+            <div class="glass rounded-3xl p-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="spinner" style="width:24px;height:24px;border-width:3px;"></div>
+                    <span id="loadingText" class="text-zinc-400">Analysiere Keywords...</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+                <div id="loadingKeyword" class="text-sm text-zinc-500 mt-2"></div>
+            </div>
         </div>
 
         <!-- Results -->
         <div id="results" class="hidden mt-10">
+
+            <!-- Controls -->
+            <div class="flex items-center justify-between mb-6 fade-up">
+                <div class="flex items-center gap-4">
+                    <!-- Sort -->
+                    <select id="sortSelect" onchange="sortResults()" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-red-500 focus:outline-none">
+                        <option value="score">Score (hoch-niedrig)</option>
+                        <option value="score_asc">Score (niedrig-hoch)</option>
+                        <option value="alpha">Alphabetisch</option>
+                        <option value="supply">Supply (niedrig)</option>
+                    </select>
+                    <!-- Filter -->
+                    <select id="filterSelect" onchange="filterResults()" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl px-4 py-2 text-sm focus:border-red-500 focus:outline-none">
+                        <option value="all">Alle anzeigen</option>
+                        <option value="excellent">Nur Excellent (7+)</option>
+                        <option value="good">Nur Good (4+)</option>
+                    </select>
+                </div>
+                <!-- Export Button -->
+                <button onclick="exportCSV()" class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-xl px-4 py-2 text-sm hover:border-red-500 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    CSV Export
+                </button>
+            </div>
 
             <!-- Top Result -->
             <div id="topResult" class="glass rounded-3xl p-8 mb-6 border-2 border-green-500/30 glow fade-up">
@@ -192,7 +273,7 @@
                     <div class="text-5xl pulse-dot">&#x1F48E;</div>
                     <div class="flex-1">
                         <div class="text-sm font-semibold text-green-400 uppercase tracking-wider mb-1">Beste Chance</div>
-                        <div id="topKeyword" class="text-3xl font-bold text-white"></div>
+                        <div id="topKeyword" class="text-3xl font-bold text-white cursor-pointer hover:text-green-400 transition-colors" onclick="copyText(this.textContent)"></div>
                     </div>
                     <div class="text-right">
                         <div id="topScore" class="text-5xl font-bold text-green-400"></div>
@@ -203,8 +284,9 @@
 
             <!-- Results List -->
             <div class="glass rounded-3xl overflow-hidden fade-up stagger-2">
-                <div class="p-6 border-b border-zinc-800">
+                <div class="p-6 border-b border-zinc-800 flex justify-between items-center">
                     <h2 class="text-xl font-bold text-white">Alle Ergebnisse</h2>
+                    <span id="resultCount" class="text-zinc-500 text-sm"></span>
                 </div>
                 <div id="resultsList" class="divide-y divide-zinc-800/50"></div>
             </div>
@@ -219,10 +301,95 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
     <script>
         const API_BASE = '';
         let debounce;
+        let allResults = [];
+        let isAnalyzing = false;
 
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            setupKeyboardShortcuts();
+        });
+
+        // Keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Enter to analyze (when not in textarea or already analyzing)
+                if (e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    if (!isAnalyzing) analyze();
+                }
+                // Ctrl+Enter from textarea
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    if (!isAnalyzing) analyze();
+                }
+                // Escape to cancel
+                if (e.key === 'Escape' && isAnalyzing) {
+                    // Could implement cancel logic here
+                    showToast('Analyse laeuft noch...');
+                }
+            });
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.background = type === 'success' ? '#22c55e' : '#ef4444';
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Copy to clipboard
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Kopiert: ' + text);
+            });
+        }
+
+        // Search History
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            if (history.length > 0) {
+                document.getElementById('historySection').classList.remove('hidden');
+                document.getElementById('historyList').innerHTML = history.slice(0, 10).map(h => `
+                    <button onclick="loadFromHistory('${h.replace(/'/g, "\\'")}')"
+                        class="history-item bg-zinc-900 border border-zinc-800 text-zinc-400 px-3 py-1 rounded-lg text-sm transition-colors">
+                        ${h}
+                    </button>
+                `).join('');
+            }
+        }
+
+        function saveToHistory(keywords) {
+            let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+            keywords.forEach(kw => {
+                history = history.filter(h => h.toLowerCase() !== kw.toLowerCase());
+                history.unshift(kw);
+            });
+            localStorage.setItem('searchHistory', JSON.stringify(history.slice(0, 20)));
+            loadHistory();
+        }
+
+        function loadFromHistory(keyword) {
+            const ta = document.getElementById('keywords');
+            ta.value = keyword;
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('searchHistory');
+            document.getElementById('historySection').classList.add('hidden');
+            showToast('History geloescht');
+        }
+
+        // Autocomplete
         async function getSuggestions() {
             clearTimeout(debounce);
             const input = document.getElementById('suggestionInput').value.trim();
@@ -252,6 +419,8 @@
             }, 300);
         }
 
+        document.getElementById('suggestionInput').addEventListener('keyup', getSuggestions);
+
         function addKeyword(kw) {
             const ta = document.getElementById('keywords');
             const val = ta.value.trim();
@@ -260,6 +429,7 @@
             document.getElementById('suggestions').innerHTML = '';
         }
 
+        // Main analyze function
         async function analyze() {
             const keywords = document.getElementById('keywords').value
                 .split('\n')
@@ -267,16 +437,21 @@
                 .filter(k => k);
 
             if (!keywords.length) {
-                alert('Bitte mindestens ein Keyword eingeben');
+                showToast('Bitte mindestens ein Keyword eingeben', 'error');
                 return;
             }
 
+            isAnalyzing = true;
             const btn = document.getElementById('analyzeBtn');
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:3px;"></div>';
 
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('results').classList.add('hidden');
+            document.getElementById('progressFill').style.width = '0%';
+
+            // Save to history
+            saveToHistory(keywords);
 
             try {
                 const res = await fetch(`${API_BASE}/api/analyze`, {
@@ -290,21 +465,28 @@
                 });
 
                 const data = await res.json();
+
+                // Simulate progress for better UX
+                document.getElementById('progressFill').style.width = '100%';
+
+                allResults = data.results || [];
                 showResults(data);
             } catch (e) {
-                alert('Fehler: ' + e.message);
+                showToast('Fehler: ' + e.message, 'error');
             } finally {
+                isAnalyzing = false;
                 btn.disabled = false;
                 btn.innerHTML = '<span>ANALYSIEREN</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>';
                 document.getElementById('loading').classList.add('hidden');
             }
         }
 
+        // Show results
         function showResults(data) {
             const results = (data.results || []).sort((a, b) => b.gap_score - a.gap_score);
 
             if (!results.length) {
-                alert('Keine Ergebnisse gefunden');
+                showToast('Keine Ergebnisse gefunden', 'error');
                 return;
             }
 
@@ -313,25 +495,56 @@
             document.getElementById('topKeyword').textContent = best.keyword;
             document.getElementById('topScore').textContent = best.gap_score.toFixed(1);
 
-            // Results list
+            renderResultsList(results);
+
+            // Export info
+            if (data.exported > 0) {
+                document.getElementById('exportInfo').innerHTML = `<span class="text-green-400">&#x2713;</span> ${data.exported} Keywords nach Notion exportiert`;
+            } else {
+                document.getElementById('exportInfo').textContent = '';
+            }
+
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        // Render results list
+        function renderResultsList(results) {
+            document.getElementById('resultCount').textContent = `${results.length} Ergebnisse`;
+
             document.getElementById('resultsList').innerHTML = results.map((r, i) => {
                 const scoreColor = r.gap_score >= 7 ? 'text-green-400' : (r.gap_score >= 4 ? 'text-yellow-400' : 'text-red-400');
                 const glowClass = r.gap_score >= 7 ? 'score-glow-green' : (r.gap_score >= 4 ? 'score-glow-yellow' : 'score-glow-red');
                 const emoji = r.gap_score >= 7 ? '&#x1F7E2;' : (r.gap_score >= 4 ? '&#x1F7E1;' : '&#x1F534;');
                 const trend = r.trend_direction === 'rising' ? '&#x2197;' : (r.trend_direction === 'falling' ? '&#x2198;' : '&#x2192;');
+                const insights = r.insights || [];
 
                 return `
-                    <div class="result-item p-6 hover:bg-zinc-900/50 transition-all" style="animation-delay: ${i * 0.1}s">
+                    <div class="result-item p-6 hover:bg-zinc-900/50 transition-all" style="animation-delay: ${i * 0.05}s">
                         <div class="flex items-center gap-6">
                             <div class="flex-1">
-                                <div class="text-lg font-semibold text-white mb-2">${r.keyword}</div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-lg font-semibold text-white cursor-pointer hover:text-red-400 transition-colors" onclick="copyText('${r.keyword.replace(/'/g, "\\'")}')">${r.keyword}</span>
+                                    <button onclick="copyText('${r.keyword.replace(/'/g, "\\'")}')" class="copy-btn text-zinc-500 hover:text-white">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                    </button>
+                                </div>
                                 <div class="flex items-center gap-4 text-sm text-zinc-500">
                                     <span>${trend} Trend</span>
                                     <span>&#x2022;</span>
-                                    <span>${r.suggestions_count} Vorschlaege</span>
+                                    <span>Demand: ${r.demand_score}</span>
                                     <span>&#x2022;</span>
-                                    <span>D: ${r.demand_score} / S: ${r.supply_score}</span>
+                                    <span>Supply: ${r.supply_score}</span>
+                                    ${insights.length ? `<button onclick="toggleInsights(${i})" class="text-red-400 hover:text-red-300">+ ${insights.length} Insights</button>` : ''}
                                 </div>
+                                ${insights.length ? `
+                                    <div id="insights-${i}" class="insights-content mt-3">
+                                        <div class="bg-zinc-900/50 rounded-xl p-4 text-sm text-zinc-400">
+                                            ${insights.map(ins => `<div class="mb-1">&#x2022; ${ins}</div>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="flex items-center gap-4">
                                 <span class="text-2xl">${emoji}</span>
@@ -343,15 +556,90 @@
                     </div>
                 `;
             }).join('');
+        }
 
-            // Export info
-            if (data.exported > 0) {
-                document.getElementById('exportInfo').innerHTML = `<span class="text-green-400">&#x2713;</span> ${data.exported} Keywords nach Notion exportiert`;
-            } else {
-                document.getElementById('exportInfo').textContent = '';
+        // Toggle insights
+        function toggleInsights(index) {
+            const el = document.getElementById(`insights-${index}`);
+            if (el) el.classList.toggle('open');
+        }
+
+        // Sort results
+        function sortResults() {
+            const sort = document.getElementById('sortSelect').value;
+            let sorted = [...allResults];
+
+            switch (sort) {
+                case 'score':
+                    sorted.sort((a, b) => b.gap_score - a.gap_score);
+                    break;
+                case 'score_asc':
+                    sorted.sort((a, b) => a.gap_score - b.gap_score);
+                    break;
+                case 'alpha':
+                    sorted.sort((a, b) => a.keyword.localeCompare(b.keyword));
+                    break;
+                case 'supply':
+                    sorted.sort((a, b) => a.supply_score - b.supply_score);
+                    break;
             }
 
-            document.getElementById('results').classList.remove('hidden');
+            filterResults(sorted);
+        }
+
+        // Filter results
+        function filterResults(results = null) {
+            const filter = document.getElementById('filterSelect').value;
+            let filtered = results || [...allResults];
+
+            // Apply sort first if results not provided
+            if (!results) {
+                sortResults();
+                return;
+            }
+
+            switch (filter) {
+                case 'excellent':
+                    filtered = filtered.filter(r => r.gap_score >= 7);
+                    break;
+                case 'good':
+                    filtered = filtered.filter(r => r.gap_score >= 4);
+                    break;
+            }
+
+            renderResultsList(filtered);
+        }
+
+        // Export to CSV
+        function exportCSV() {
+            if (!allResults.length) {
+                showToast('Keine Ergebnisse zum Exportieren', 'error');
+                return;
+            }
+
+            const headers = ['Keyword', 'Gap Score', 'Rating', 'Demand Score', 'Supply Score', 'Trend Direction', 'Videos/30d', 'Insights'];
+            const rows = allResults.map(r => [
+                `"${r.keyword}"`,
+                r.gap_score.toFixed(2),
+                r.gap_rating,
+                r.demand_score,
+                r.supply_score,
+                r.trend_direction || 'stable',
+                r.videos_last_30_days || 0,
+                `"${(r.insights || []).join('; ')}"`
+            ]);
+
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `youtube-seo-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+            showToast('CSV exportiert!');
         }
     </script>
 </body>
