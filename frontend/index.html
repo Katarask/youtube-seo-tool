@@ -3,69 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube SEO Tool</title>
+    <title>YOUTUBE</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/framer-motion@11.0.8/dist/framer-motion.js"></script>
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
-        .score-badge { min-width: 48px; }
-        .suggestion-chip:hover { transform: translateY(-1px); }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .spinner { border: 3px solid #e5e7eb; border-top-color: #8b5cf6; border-radius: 50%; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        * { font-family: 'Space Grotesk', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #FF0000 0%, #FF4444 50%, #CC0000 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow {
+            box-shadow: 0 0 60px rgba(255, 0, 0, 0.15);
+        }
+
+        .card-hover {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+        }
+
+        .chip {
+            transition: all 0.2s ease;
+        }
+
+        .chip:hover {
+            background: rgba(255, 0, 0, 0.15);
+            border-color: rgba(255, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .score-glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
+        .score-glow-yellow { box-shadow: 0 0 20px rgba(234, 179, 8, 0.4); }
+        .score-glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+
+        .fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 0, 0, 0.1);
+            border-top-color: #FF0000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .pulse-dot {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+
+        .result-item {
+            animation: slideIn 0.4s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .hero-bg {
+            background: radial-gradient(ellipse at top, rgba(255,0,0,0.08) 0%, transparent 50%);
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-violet-50 via-white to-purple-50 min-h-screen">
+<body class="bg-[#0A0A0A] min-h-screen text-white hero-bg">
 
-    <div class="max-w-3xl mx-auto px-4 py-12">
+    <div class="max-w-4xl mx-auto px-6 py-16">
 
-        <!-- Header -->
-        <div class="text-center mb-10">
-            <div class="inline-flex items-center gap-2 bg-violet-100 text-violet-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
-                <span>YouTube SEO</span>
-            </div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-3">Finde deine Content-Chance</h1>
-            <p class="text-gray-500 text-lg">Analysiere Keywords und entdecke unterversorgte Nischen</p>
+        <!-- Hero -->
+        <div class="text-center mb-16 fade-up">
+            <h1 class="text-8xl font-bold gradient-text tracking-tight mb-4">
+                YOUTUBE
+            </h1>
+            <p class="text-xl text-zinc-500 font-medium">
+                Finde unterversorgte Nischen. Dominiere den Algorithmus.
+            </p>
         </div>
 
         <!-- Main Card -->
-        <div class="glass rounded-2xl shadow-xl shadow-purple-100/50 p-8 mb-6">
+        <div class="glass rounded-3xl p-10 glow card-hover fade-up stagger-1">
 
             <!-- Keyword Input -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Keywords eingeben</label>
+            <div class="mb-8">
+                <label class="block text-sm font-semibold text-zinc-400 mb-3 uppercase tracking-wider">Keywords</label>
                 <textarea
                     id="keywords"
                     rows="3"
-                    class="w-full border-2 border-gray-200 rounded-xl p-4 text-lg focus:border-violet-500 focus:ring-0 transition resize-none"
+                    class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 text-xl text-white placeholder-zinc-600 focus:border-red-500 focus:outline-none input-glow transition-all resize-none"
                     placeholder="Ein Keyword pro Zeile..."></textarea>
             </div>
 
             <!-- Quick Suggestions -->
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Oder Vorschlaege holen</label>
-                <div class="flex gap-2">
-                    <input
-                        type="text"
-                        id="suggestionInput"
-                        class="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-violet-500 focus:ring-0 transition"
-                        placeholder="z.B. meditation, coding..."
-                        onkeyup="getSuggestions()">
-                </div>
-                <div id="suggestions" class="flex flex-wrap gap-2 mt-3"></div>
+            <div class="mb-8">
+                <label class="block text-sm font-semibold text-zinc-400 mb-3 uppercase tracking-wider">Vorschlaege</label>
+                <input
+                    type="text"
+                    id="suggestionInput"
+                    class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl px-5 py-4 text-lg text-white placeholder-zinc-600 focus:border-red-500 focus:outline-none input-glow transition-all"
+                    placeholder="Tippe um Vorschlaege zu laden..."
+                    onkeyup="getSuggestions()">
+                <div id="suggestions" class="flex flex-wrap gap-3 mt-4"></div>
             </div>
 
             <!-- Options -->
-            <div class="flex items-center gap-6 mb-6 text-sm">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="expandCheck" class="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
-                    <span class="text-gray-600">Keywords erweitern</span>
+            <div class="flex items-center gap-8 mb-8">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="expandCheck" class="w-5 h-5 rounded border-zinc-700 bg-zinc-900 text-red-500 focus:ring-red-500 focus:ring-offset-0">
+                    <span class="text-zinc-400 group-hover:text-white transition-colors">Keywords erweitern</span>
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="notionCheck" class="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
-                    <span class="text-gray-600">Zu Notion exportieren</span>
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <input type="checkbox" id="notionCheck" checked class="w-5 h-5 rounded border-zinc-700 bg-zinc-900 text-red-500 focus:ring-red-500 focus:ring-offset-0">
+                    <span class="text-zinc-400 group-hover:text-white transition-colors">Notion Export</span>
                 </label>
             </div>
 
@@ -73,50 +169,53 @@
             <button
                 id="analyzeBtn"
                 onclick="analyze()"
-                class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-4 px-6 rounded-xl transition flex items-center justify-center gap-2">
-                <span>Analysieren</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                class="w-full btn-primary text-white font-bold text-xl py-5 px-8 rounded-2xl flex items-center justify-center gap-3">
+                <span>ANALYSIEREN</span>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                 </svg>
             </button>
         </div>
 
+        <!-- Loading -->
+        <div id="loading" class="hidden text-center py-16">
+            <div class="spinner mx-auto mb-6"></div>
+            <div class="text-zinc-500 text-lg">Analysiere Keywords...</div>
+        </div>
+
         <!-- Results -->
-        <div id="results" class="hidden fade-in">
+        <div id="results" class="hidden mt-10">
 
             <!-- Top Result -->
-            <div id="topResult" class="glass rounded-2xl p-6 mb-4 border-2 border-green-200 bg-green-50/50">
-                <div class="flex items-center gap-3">
-                    <div class="text-3xl">&#x1F48E;</div>
-                    <div>
-                        <div class="text-sm text-green-600 font-medium">Beste Chance</div>
-                        <div id="topKeyword" class="text-xl font-bold text-gray-900"></div>
+            <div id="topResult" class="glass rounded-3xl p-8 mb-6 border-2 border-green-500/30 glow fade-up">
+                <div class="flex items-center gap-6">
+                    <div class="text-5xl pulse-dot">&#x1F48E;</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-semibold text-green-400 uppercase tracking-wider mb-1">Beste Chance</div>
+                        <div id="topKeyword" class="text-3xl font-bold text-white"></div>
                     </div>
-                    <div id="topScore" class="ml-auto text-3xl font-bold text-green-600"></div>
+                    <div class="text-right">
+                        <div id="topScore" class="text-5xl font-bold text-green-400"></div>
+                        <div class="text-sm text-zinc-500 mt-1">Gap Score</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Results List -->
-            <div class="glass rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-gray-100">
-                    <h2 class="font-semibold text-gray-900">Alle Ergebnisse</h2>
+            <div class="glass rounded-3xl overflow-hidden fade-up stagger-2">
+                <div class="p-6 border-b border-zinc-800">
+                    <h2 class="text-xl font-bold text-white">Alle Ergebnisse</h2>
                 </div>
-                <div id="resultsList" class="divide-y divide-gray-100"></div>
+                <div id="resultsList" class="divide-y divide-zinc-800/50"></div>
             </div>
 
-            <!-- Info -->
-            <div id="exportInfo" class="text-center text-sm text-gray-500 mt-4"></div>
-        </div>
-
-        <!-- Loading -->
-        <div id="loading" class="hidden text-center py-12">
-            <div class="spinner mx-auto mb-4"></div>
-            <div class="text-gray-500">Analysiere Keywords...</div>
+            <!-- Export Info -->
+            <div id="exportInfo" class="text-center text-zinc-500 mt-6 fade-up stagger-3"></div>
         </div>
 
         <!-- Footer -->
-        <div class="text-center text-gray-400 text-sm mt-12">
-            YouTube SEO Tool
+        <div class="text-center text-zinc-700 text-sm mt-16 fade-up">
+            YOUTUBE SEO TOOL
         </div>
     </div>
 
@@ -124,7 +223,6 @@
         const API_BASE = '';
         let debounce;
 
-        // Get autocomplete suggestions
         async function getSuggestions() {
             clearTimeout(debounce);
             const input = document.getElementById('suggestionInput').value.trim();
@@ -141,9 +239,10 @@
 
                     document.getElementById('suggestions').innerHTML = (data.suggestions || [])
                         .slice(0, 8)
-                        .map(s => `
+                        .map((s, i) => `
                             <button onclick="addKeyword('${s.replace(/'/g, "\\'")}')"
-                                class="suggestion-chip bg-gray-100 hover:bg-violet-100 text-gray-700 hover:text-violet-700 px-3 py-1.5 rounded-lg text-sm transition">
+                                class="chip bg-zinc-900 border border-zinc-800 text-zinc-300 px-4 py-2 rounded-xl text-sm font-medium"
+                                style="animation-delay: ${i * 0.05}s">
                                 + ${s}
                             </button>
                         `).join('');
@@ -153,7 +252,6 @@
             }, 300);
         }
 
-        // Add keyword to textarea
         function addKeyword(kw) {
             const ta = document.getElementById('keywords');
             const val = ta.value.trim();
@@ -162,7 +260,6 @@
             document.getElementById('suggestions').innerHTML = '';
         }
 
-        // Analyze keywords
         async function analyze() {
             const keywords = document.getElementById('keywords').value
                 .split('\n')
@@ -176,7 +273,7 @@
 
             const btn = document.getElementById('analyzeBtn');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div>';
+            btn.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:3px;"></div>';
 
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('results').classList.add('hidden');
@@ -198,12 +295,11 @@
                 alert('Fehler: ' + e.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>Analysieren</span><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>';
+                btn.innerHTML = '<span>ANALYSIEREN</span><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>';
                 document.getElementById('loading').classList.add('hidden');
             }
         }
 
-        // Display results
         function showResults(data) {
             const results = (data.results || []).sort((a, b) => b.gap_score - a.gap_score);
 
@@ -218,27 +314,29 @@
             document.getElementById('topScore').textContent = best.gap_score.toFixed(1);
 
             // Results list
-            document.getElementById('resultsList').innerHTML = results.map(r => {
-                const color = r.gap_score >= 7 ? 'green' : (r.gap_score >= 4 ? 'yellow' : 'red');
+            document.getElementById('resultsList').innerHTML = results.map((r, i) => {
+                const scoreColor = r.gap_score >= 7 ? 'text-green-400' : (r.gap_score >= 4 ? 'text-yellow-400' : 'text-red-400');
+                const glowClass = r.gap_score >= 7 ? 'score-glow-green' : (r.gap_score >= 4 ? 'score-glow-yellow' : 'score-glow-red');
                 const emoji = r.gap_score >= 7 ? '&#x1F7E2;' : (r.gap_score >= 4 ? '&#x1F7E1;' : '&#x1F534;');
-                const trend = r.trend_direction === 'rising' ? '&#x2197;&#xFE0F;' : (r.trend_direction === 'falling' ? '&#x2198;&#xFE0F;' : '&#x2192;');
+                const trend = r.trend_direction === 'rising' ? '&#x2197;' : (r.trend_direction === 'falling' ? '&#x2198;' : '&#x2192;');
 
                 return `
-                    <div class="p-4 hover:bg-gray-50 transition">
-                        <div class="flex items-center gap-4">
+                    <div class="result-item p-6 hover:bg-zinc-900/50 transition-all" style="animation-delay: ${i * 0.1}s">
+                        <div class="flex items-center gap-6">
                             <div class="flex-1">
-                                <div class="font-medium text-gray-900">${r.keyword}</div>
-                                <div class="text-sm text-gray-500 mt-1">
-                                    ${trend} Trend &middot; ${r.videos_30d} Videos/30d &middot; Views: ${r.avg_views ? r.avg_views.toLocaleString() : '-'}
+                                <div class="text-lg font-semibold text-white mb-2">${r.keyword}</div>
+                                <div class="flex items-center gap-4 text-sm text-zinc-500">
+                                    <span>${trend} Trend</span>
+                                    <span>&#x2022;</span>
+                                    <span>${r.suggestions_count} Vorschlaege</span>
+                                    <span>&#x2022;</span>
+                                    <span>D: ${r.demand_score} / S: ${r.supply_score}</span>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl">${emoji}</span>
-                                    <span class="text-2xl font-bold text-gray-900">${r.gap_score.toFixed(1)}</span>
-                                </div>
-                                <div class="text-xs text-gray-400 mt-1">
-                                    D: ${r.demand_score} / S: ${r.supply_score}
+                            <div class="flex items-center gap-4">
+                                <span class="text-2xl">${emoji}</span>
+                                <div class="w-20 h-20 rounded-2xl bg-zinc-900 flex items-center justify-center ${glowClass}">
+                                    <span class="text-3xl font-bold ${scoreColor}">${r.gap_score.toFixed(1)}</span>
                                 </div>
                             </div>
                         </div>
@@ -248,7 +346,7 @@
 
             // Export info
             if (data.exported > 0) {
-                document.getElementById('exportInfo').textContent = `${data.exported} Keywords nach Notion exportiert`;
+                document.getElementById('exportInfo').innerHTML = `<span class="text-green-400">&#x2713;</span> ${data.exported} Keywords nach Notion exportiert`;
             } else {
                 document.getElementById('exportInfo').textContent = '';
             }
