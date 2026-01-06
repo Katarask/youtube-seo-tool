@@ -2,12 +2,12 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-import sys
 import re
 import requests
 from urllib.parse import unquote
+from datetime import datetime
 
-# Simple autocomplete function (standalone, no dependencies)
+
 def get_autocomplete_suggestions(query: str) -> list[str]:
     """Fetch suggestions from YouTube autocomplete API."""
     url = "https://suggestqueries-clients6.youtube.com/complete/search"
@@ -39,6 +39,54 @@ def get_autocomplete_suggestions(query: str) -> list[str]:
     except Exception as e:
         print(f"Autocomplete error: {e}")
         return []
+
+
+def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply_score: float, suggestion_count: int) -> bool:
+    """Export a keyword analysis to Notion database."""
+    notion_key = os.getenv("NOTION_API_KEY")
+    notion_db = os.getenv("NOTION_DATABASE_ID")
+
+    if not notion_key or not notion_db:
+        return False
+
+    # Determine rating
+    if gap_score >= 7:
+        rating = "Excellent"
+        icon = "🟢"
+    elif gap_score >= 4:
+        rating = "Good"
+        icon = "🟡"
+    else:
+        rating = "Poor"
+        icon = "🔴"
+
+    try:
+        response = requests.post(
+            "https://api.notion.com/v1/pages",
+            headers={
+                "Authorization": f"Bearer {notion_key}",
+                "Content-Type": "application/json",
+                "Notion-Version": "2022-06-28"
+            },
+            json={
+                "parent": {"database_id": notion_db},
+                "icon": {"type": "emoji", "emoji": icon},
+                "properties": {
+                    "Keyword": {"title": [{"text": {"content": keyword}}]},
+                    "Gap Score": {"number": gap_score},
+                    "Demand Score": {"number": demand_score},
+                    "Supply Score": {"number": supply_score},
+                    "Suggestions": {"number": suggestion_count},
+                    "Rating": {"select": {"name": rating}},
+                    "Analyzed": {"date": {"start": datetime.now().isoformat()}}
+                }
+            },
+            timeout=10
+        )
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Notion error: {e}")
+        return False
 
 
 class handler(BaseHTTPRequestHandler):
@@ -78,17 +126,17 @@ class handler(BaseHTTPRequestHandler):
 
         if self.path == '/api/analyze':
             keywords = data.get('keywords', [])
+            export_notion = data.get('export_notion', False)
 
-            # For now, return mock results since full analyzer has complex dependencies
             results = []
+            exported = 0
+
             for kw in keywords[:10]:
-                # Get suggestion count as a simple metric
                 suggestions = get_autocomplete_suggestions(kw)
                 suggestion_count = len(suggestions)
 
-                # Simple scoring based on suggestion count
                 demand_score = min(10, suggestion_count * 0.8)
-                supply_score = 5.0  # Default
+                supply_score = 5.0
                 gap_score = round(demand_score / max(supply_score, 1) * 5, 1)
 
                 results.append({
@@ -103,9 +151,14 @@ class handler(BaseHTTPRequestHandler):
                     "suggestions_count": suggestion_count
                 })
 
+                # Export to Notion if requested
+                if export_notion:
+                    if export_to_notion(kw, gap_score, demand_score, supply_score, suggestion_count):
+                        exported += 1
+
             self.wfile.write(json.dumps({
                 "results": results,
-                "exported": 0,
+                "exported": exported,
                 "quota_used": 0
             }).encode())
 
