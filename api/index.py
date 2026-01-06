@@ -86,9 +86,10 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
             },
             timeout=10
         )
-        # Notion returns 200 for success
-        success = response.status_code == 200
-        print(f"Notion response: {response.status_code} - success: {success}")
+        # Notion returns 200 for success, but sometimes 201 for created
+        success = response.status_code in [200, 201]
+        if not success:
+            print(f"Notion failed: {response.status_code} - {response.text[:500]}")
         return success
     except Exception as e:
         print(f"Notion error: {e}")
@@ -137,7 +138,8 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
-        if self.path == '/api/analyze':
+        # Handle both /api/analyze and /api/index (Vercel routing)
+        if self.path == '/api/analyze' or self.path.endswith('/analyze') or '/analyze' in self.path or self.path == '/api/index':
             keywords = data.get('keywords', [])
             export_notion = data.get('export_notion', False)
 
