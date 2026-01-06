@@ -41,15 +41,16 @@ def get_autocomplete_suggestions(query: str) -> list[str]:
         return []
 
 
+last_notion_error = None
+
 def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply_score: float, suggestion_count: int) -> bool:
     """Export a keyword analysis to Notion database."""
+    global last_notion_error
     notion_key = os.getenv("NOTION_API_KEY")
     notion_db = os.getenv("NOTION_DATABASE_ID")
 
-    print(f"Notion key present: {bool(notion_key)}, DB present: {bool(notion_db)}")
-
     if not notion_key or not notion_db:
-        print("Missing Notion credentials")
+        last_notion_error = "Missing credentials"
         return False
 
     # Determine rating (matching existing database options)
@@ -86,13 +87,15 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
             },
             timeout=10
         )
-        # Notion returns 200 for success, but sometimes 201 for created
-        success = response.status_code in [200, 201]
-        if not success:
-            print(f"Notion failed: {response.status_code} - {response.text[:500]}")
-        return success
+        # Notion returns 200 for success
+        if response.status_code == 200:
+            last_notion_error = None
+            return True
+        else:
+            last_notion_error = f"HTTP {response.status_code}: {response.text[:200]}"
+            return False
     except Exception as e:
-        print(f"Notion error: {e}")
+        last_notion_error = str(e)
         return False
 
 
@@ -182,7 +185,8 @@ class handler(BaseHTTPRequestHandler):
                 "debug": {
                     "export_requested": export_notion,
                     "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
-                    "notion_db_set": bool(os.getenv("NOTION_DATABASE_ID"))
+                    "notion_db_set": bool(os.getenv("NOTION_DATABASE_ID")),
+                    "last_error": last_notion_error
                 }
             }).encode())
 
