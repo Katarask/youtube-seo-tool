@@ -83,7 +83,12 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
             },
             timeout=10
         )
-        return response.status_code == 200
+        # Notion returns 200 for success
+        if response.status_code == 200:
+            return True
+        else:
+            print(f"Notion API error: {response.status_code} - {response.text}")
+            return False
     except Exception as e:
         print(f"Notion error: {e}")
         return False
