@@ -46,8 +46,8 @@ last_notion_error = None
 def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply_score: float, suggestion_count: int) -> bool:
     """Export a keyword analysis to Notion database."""
     global last_notion_error
-    notion_key = os.getenv("NOTION_API_KEY")
-    notion_db = os.getenv("NOTION_DATABASE_ID")
+    notion_key = os.getenv("NOTION_API_KEY", "").strip()
+    notion_db = os.getenv("NOTION_DATABASE_ID", "").strip()
 
     if not notion_key or not notion_db:
         last_notion_error = "Missing credentials"
