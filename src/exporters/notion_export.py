@@ -27,7 +27,7 @@ def _build_properties(exporter: NotionExporter, analysis: KeywordAnalysis) -> di
         properties["Supply Score"] = {"number": round(analysis.supply.supply_score, 2)}
         properties["Videos (30 days)"] = {"number": analysis.supply.videos_last_30_days}
         properties["Avg Channel Size"] = {"number": int(analysis.supply.avg_channel_subscribers)}
-        properties["Small Channels in Top 10"] = {"number": analysis.supply.small_channels_in_top_10}
+        properties["Small Channels %"] = {"number": analysis.supply.small_channels_in_top_10}
         properties["Avg Video Age (days)"] = {"number": int(analysis.supply.avg_video_age_days)}
     
     if analysis.trend_data:

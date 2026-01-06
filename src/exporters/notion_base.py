@@ -37,7 +37,7 @@ class NotionExporter:
         "Avg Views (Top 10)": {"number": {"format": "number"}},
         "Videos (30 days)": {"number": {"format": "number"}},
         "Avg Channel Size": {"number": {"format": "number"}},
-        "Small Channels in Top 10": {"number": {"format": "number"}},
+        "Small Channels %": {"number": {"format": "number"}},
         "Avg Video Age (days)": {"number": {"format": "number"}},
         "Suggestions Count": {"number": {"format": "number"}},
         "Analyzed At": {"date": {}},

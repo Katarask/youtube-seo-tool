@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Keyword Research | TEKOM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .rating-excellent { background: #10b981; }
+        .rating-good { background: #f59e0b; }
+        .rating-poor { background: #ef4444; }
+        .loading { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <div class="gradient-bg text-white py-8 px-4">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl font-bold mb-2">🎯 YouTube Keyword Research</h1>
+            <p class="opacity-90">Find content opportunities with Gap Score analysis</p>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Input Section -->
+        <div class="card p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Enter keywords (one per line)</label>
+            <textarea id="keywords" rows="4" 
+                class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="defense recruiting&#10;aerospace jobs germany&#10;headhunter IT"></textarea>
+            
+            <div class="flex flex-wrap gap-4 mt-4">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" id="expand" class="rounded text-purple-600">
+                    <span>Expand keywords</span>
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" id="notion" checked class="rounded text-purple-600">
+                    <span>Export to Notion</span>
+                </label>
+            </div>
+            
+            <button onclick="analyze()" id="analyzeBtn"
+                class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                🔍 Analyze Keywords
+            </button>
+        </div>
+
+        <!-- Autocomplete Section -->
+        <div class="card p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">💡 Get keyword suggestions</label>
+            <div class="flex gap-2">
+                <input type="text" id="autocompleteInput" 
+                    class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500"
+                    placeholder="Type a keyword..." onkeyup="debounceAutocomplete()">
+            </div>
+            <div id="suggestions" class="flex flex-wrap gap-2 mt-3"></div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold mb-4">📊 Analysis Results</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="text-left p-3">Keyword</th>
+                                <th class="text-center p-3">Gap</th>
+                                <th class="text-center p-3">Rating</th>
+                                <th class="text-center p-3">Demand</th>
+                                <th class="text-center p-3">Supply</th>
+                                <th class="text-center p-3">Trend</th>
+                                <th class="text-center p-3">Videos/30d</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+                <div id="topOpportunity" class="mt-4 p-4 bg-green-50 rounded-lg text-green-800 hidden"></div>
+                <div id="notionStatus" class="mt-2 text-sm text-gray-600"></div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="loading text-purple-600 text-lg">⏳ Analyzing keywords...</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center py-6 text-gray-500 text-sm">
+        Built for TEKOM | YouTube SEO Research Tool
+    </div>
+
+    <script>
+        let debounceTimer;
+        
+        function debounceAutocomplete() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(getAutocomplete, 300);
+        }
+        
+        async function getAutocomplete() {
+            const query = document.getElementById('autocompleteInput').value;
+            if (query.length < 2) {
+                document.getElementById('suggestions').innerHTML = '';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                const container = document.getElementById('suggestions');
+                container.innerHTML = data.suggestions.map(s => 
+                    `<span onclick="addKeyword('${s}')" class="cursor-pointer bg-gray-100 hover:bg-purple-100 px-3 py-1 rounded-full text-sm">${s}</span>`
+                ).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function addKeyword(kw) {
+            const textarea = document.getElementById('keywords');
+            const current = textarea.value.trim();
+            textarea.value = current ? current + '\n' + kw : kw;
+        }
+        
+        async function analyze() {
+            const keywords = document.getElementById('keywords').value
+                .split('\n')
+                .map(k => k.trim())
+                .filter(k => k);
+            
+            if (!keywords.length) {
+                alert('Please enter at least one keyword');
+                return;
+            }
+            
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Analyzing...';
+            
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            
+            try {
+                const res = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        keywords,
+                        expand: document.getElementById('expand').checked,
+                        export_notion: document.getElementById('notion').checked
+                    })
+                });
+                
+                const data = await res.json();
+                displayResults(data);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 Analyze Keywords';
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+        
+        function displayResults(data) {
+            const results = data.results || [];
+            if (!results.length) {
+                alert('No results found');
+                return;
+            }
+            
+            // Sort by gap score
+            results.sort((a, b) => b.gap_score - a.gap_score);
+            
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = results.map(r => {
+                const ratingClass = r.rating === 'excellent' ? 'rating-excellent' : 
+                                   (r.rating === 'good' ? 'rating-good' : 'rating-poor');
+                const ratingEmoji = r.rating === 'excellent' ? '🟢' : (r.rating === 'good' ? '🟡' : '🔴');
+                const trend = r.trend_direction === 'rising' ? '↗️' : (r.trend_direction === 'falling' ? '↘️' : '→');
+                
+                return `<tr class="border-t">
+                    <td class="p-3 font-medium">${r.keyword}</td>
+                    <td class="p-3 text-center"><span class="font-bold">${r.gap_score}</span></td>
+                    <td class="p-3 text-center">${ratingEmoji}</td>
+                    <td class="p-3 text-center">${r.demand_score}</td>
+                    <td class="p-3 text-center">${r.supply_score}</td>
+                    <td class="p-3 text-center">${trend}</td>
+                    <td class="p-3 text-center">${r.videos_30d}</td>
+                </tr>`;
+            }).join('');
+            
+            // Top opportunity
+            const best = results[0];
+            const topDiv = document.getElementById('topOpportunity');
+            topDiv.innerHTML = `💎 <strong>Top Opportunity:</strong> ${best.keyword} (Gap Score: ${best.gap_score})`;
+            topDiv.classList.remove('hidden');
+            
+            // Notion status
+            if (data.exported > 0) {
+                document.getElementById('notionStatus').textContent = `✅ Exported ${data.exported} keywords to Notion`;
+            }
+            
+            document.getElementById('results').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

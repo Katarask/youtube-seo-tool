@@ -71,7 +71,7 @@ def build_page_content(analysis: KeywordAnalysis) -> list[dict]:
         supply_text = f"""• Videos (last 30 days): {analysis.supply.videos_last_30_days}
 • Videos (last 7 days): {analysis.supply.videos_last_7_days}
 • Avg Channel Size: {analysis.supply.avg_channel_subscribers:,.0f} subs
-• Small Channels in Top 10: {analysis.supply.small_channels_in_top_10}
+• Small Channels %: {analysis.supply.small_channels_in_top_10}
 • Avg Video Age: {analysis.supply.avg_video_age_days:.0f} days
 • Supply Score: {analysis.supply.supply_score:.1f}/10"""
         
