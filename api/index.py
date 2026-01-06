@@ -46,7 +46,10 @@ def export_to_notion(keyword: str, gap_score: float, demand_score: float, supply
     notion_key = os.getenv("NOTION_API_KEY")
     notion_db = os.getenv("NOTION_DATABASE_ID")
 
+    print(f"Notion key present: {bool(notion_key)}, DB present: {bool(notion_db)}")
+
     if not notion_key or not notion_db:
+        print("Missing Notion credentials")
         return False
 
     # Determine rating (matching existing database options)
