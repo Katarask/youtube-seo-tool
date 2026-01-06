@@ -119,6 +119,13 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"suggestions": suggestions}).encode())
             else:
                 self.wfile.write(json.dumps({"suggestions": []}).encode())
+        elif self.path == '/api/debug':
+            # Debug endpoint to check env vars
+            self.wfile.write(json.dumps({
+                "notion_key_set": bool(os.getenv("NOTION_API_KEY")),
+                "notion_db_set": bool(os.getenv("NOTION_DATABASE_ID")),
+                "youtube_key_set": bool(os.getenv("YOUTUBE_API_KEY"))
+            }).encode())
         else:
             self.wfile.write(json.dumps({"status": "ok", "message": "YouTube SEO API"}).encode())
 
