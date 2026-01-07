@@ -73,7 +73,7 @@ class ApifyScraper:
             )
 
         self.client = ApifyClient(self.api_key)
-        self.actor_id = "bernardo/youtube-scraper"
+        self.actor_id = "streamers/youtube-scraper"  # More reliable actor
 
     def search_videos(
         self,
@@ -94,19 +94,22 @@ class ApifyScraper:
         Returns:
             List of ScrapedVideo objects
         """
+        # Build YouTube search URL
+        search_url = f"https://www.youtube.com/results?search_query={keyword.replace(' ', '+')}"
+
         run_input = {
-            "searchKeywords": [keyword],
+            "startUrls": [{"url": search_url}],
             "maxResults": max_results,
             "maxResultsShorts": 0,
-            "maxResultStreams": 0,
+            "extendOutputFunction": "($) => { return {} }",
         }
 
-        if include_comments:
-            run_input["scrapeComments"] = True
-            run_input["maxComments"] = max_comments
-
         # Run the actor
-        run = self.client.actor(self.actor_id).call(run_input=run_input)
+        try:
+            run = self.client.actor(self.actor_id).call(run_input=run_input, timeout_secs=120)
+        except Exception as e:
+            print(f"Apify actor error: {e}")
+            return []
 
         # Get results
         videos = []
