@@ -76,15 +76,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
 
-    /* Glass Card */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 1.5rem;
-        padding: 2.5rem;
-        margin-bottom: 1.5rem;
-    }
-
     .field-label {
         color: #52525b;
         font-size: 0.7rem;
@@ -364,15 +355,14 @@ if gemini_key:
     os.environ["GEMINI_API_KEY"] = gemini_key
 
 # Header
-st.markdown('<p class="header-label">01 — Video Validator</p>', unsafe_allow_html=True)
-st.markdown('<h1 class="split-title"><span class="title-white">VIDEO</span><span class="title-red">CHECK</span></h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Soll ich dieses Video machen? Finde es heraus.</p>', unsafe_allow_html=True)
+st.markdown("""
+<p class="header-label">01 — Video Validator</p>
+<h1 class="split-title"><span class="title-white">VIDEO</span><span class="title-red">CHECK</span></h1>
+<p class="subtitle">Soll ich dieses Video machen? Finde es heraus.</p>
+<p class="field-label">Video Idee / Keyword</p>
+""", unsafe_allow_html=True)
 
-# Input Card
-st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-st.markdown('<p class="field-label">Video Idee / Keyword</p>', unsafe_allow_html=True)
 keyword = st.text_input("", placeholder="z.B. notion tutorial für anfänger", label_visibility="collapsed")
-st.markdown('</div>', unsafe_allow_html=True)
 
 # Button
 validate_btn = st.button("VALIDIEREN", use_container_width=True)
