@@ -44,21 +44,36 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #FF0000;
     }
+    .debug-box {
+        background: #2d2d2d;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Import after config
+VALIDATOR_AVAILABLE = False
+AI_PROVIDER = "none"
+import_error = None
+
 try:
     from src.core.video_validator import VideoValidator, VideoValidationResult, AI_PROVIDER
     from src.core.apify_scraper import APIFY_AVAILABLE
     VALIDATOR_AVAILABLE = True
 except ImportError as e:
-    VALIDATOR_AVAILABLE = False
-    AI_PROVIDER = "none"
-    st.error(f"Import error: {e}")
+    import_error = str(e)
+    APIFY_AVAILABLE = False
 
 st.markdown('<p class="big-title">🎬 VIDEO VALIDATOR</p>', unsafe_allow_html=True)
 st.markdown("*Should I make this video? Get AI-powered insights before you invest time.*")
+
+# Show import error if any
+if import_error:
+    st.error(f"⚠️ Import Error: {import_error}")
+    st.info("Run: `pip install -r requirements.txt` to install dependencies")
 
 # Sidebar - Status
 st.sidebar.header("🔌 API Status")
@@ -66,13 +81,17 @@ apify_key = os.getenv("APIFY_API_KEY")
 anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 gemini_key = os.getenv("GEMINI_API_KEY")
 
-st.sidebar.write("**Apify:**", "✅ Connected" if apify_key else "❌ Missing key")
+st.sidebar.write("**Apify:**", "✅ Connected" if apify_key else "❌ Missing APIFY_API_KEY")
+
 if anthropic_key:
     st.sidebar.write("**Claude:**", "✅ Connected")
+    st.sidebar.caption(f"Key: {anthropic_key[:20]}...")
 elif gemini_key:
     st.sidebar.write("**Gemini:**", "✅ Connected")
+    st.sidebar.caption(f"Key: {gemini_key[:20]}...")
 else:
-    st.sidebar.write("**AI:**", "❌ Missing key (ANTHROPIC_API_KEY or GEMINI_API_KEY)")
+    st.sidebar.write("**AI:**", "❌ Missing key")
+    st.sidebar.error("Add ANTHROPIC_API_KEY to .env")
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Settings")
@@ -84,6 +103,9 @@ channel_size = st.sidebar.selectbox(
 )
 max_videos = st.sidebar.slider("Videos to analyze", 5, 20, 10)
 include_comments = st.sidebar.checkbox("Analyze comments", value=True)
+
+# Debug mode
+debug_mode = st.sidebar.checkbox("🐛 Debug mode", value=False)
 
 # Main input
 st.markdown("---")
@@ -101,16 +123,34 @@ with col2:
 
 # Validation
 if validate_btn and keyword and VALIDATOR_AVAILABLE:
-    with st.spinner("🔍 Analyzing your video idea... (this may take 30-60 seconds)"):
+    # Progress container
+    progress_container = st.empty()
+    debug_container = st.empty()
+
+    with st.spinner("🔍 Analyzing your video idea..."):
         try:
-            validator = VideoValidator(
-                channel_size=channel_size
-            )
+            if debug_mode:
+                debug_container.info(f"🔧 Starting validation for: {keyword}")
+                debug_container.write(f"APIFY_KEY: {'Set' if apify_key else 'Missing'}")
+                debug_container.write(f"ANTHROPIC_KEY: {'Set' if anthropic_key else 'Missing'}")
+
+            validator = VideoValidator(channel_size=channel_size)
+
+            if debug_mode:
+                debug_container.write(f"✅ Validator created. AI: {AI_PROVIDER}")
+                debug_container.write(f"Apify available: {validator.apify is not None}")
+                debug_container.write(f"AI available: {validator.ai is not None}")
+
             result = validator.validate(
                 keyword,
                 max_videos=max_videos,
                 include_comments=include_comments
             )
+
+            if debug_mode:
+                debug_container.write(f"✅ Validation complete")
+                debug_container.write(f"Videos found: {len(result.top_videos)}")
+                debug_container.write(f"Comments: {result.total_comments_analyzed}")
 
             st.markdown("---")
 
@@ -129,6 +169,8 @@ if validate_btn and keyword and VALIDATOR_AVAILABLE:
                     <small>Confidence: {result.decision.confidence:.0%}</small>
                 </div>
                 """, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ Could not make a decision - check API keys and try again")
 
             st.markdown("")
 
@@ -150,15 +192,18 @@ if validate_btn and keyword and VALIDATOR_AVAILABLE:
             with left_col:
                 # Top Videos
                 st.subheader("🎬 Top Ranking Videos")
-                for i, video in enumerate(result.top_videos[:5], 1):
-                    with st.expander(f"{i}. {video['title'][:50]}..."):
-                        st.write(f"**Views:** {video['views']:,}")
-                        st.write(f"**Channel:** {video['channel']}")
-                        st.write(f"**Subscribers:** {video['subscribers']:,}")
-                        st.write(f"[Watch Video]({video['url']})")
+                if result.top_videos:
+                    for i, video in enumerate(result.top_videos[:5], 1):
+                        with st.expander(f"{i}. {video['title'][:50]}..."):
+                            st.write(f"**Views:** {video['views']:,}")
+                            st.write(f"**Channel:** {video['channel']}")
+                            st.write(f"**Subscribers:** {video['subscribers']:,}")
+                            st.write(f"[Watch Video]({video['url']})")
+                else:
+                    st.info("No videos found. Check Apify API key.")
 
                 # Comment Sentiment
-                if result.comment_sentiment:
+                if result.comment_sentiment and result.comment_sentiment.overall_sentiment != "error":
                     st.subheader("💬 Comment Analysis")
                     sent = result.comment_sentiment
 
@@ -183,6 +228,8 @@ if validate_btn and keyword and VALIDATOR_AVAILABLE:
                         st.write("**❓ Unanswered questions:**")
                         for q in sent.questions[:3]:
                             st.write(f"• {q}")
+                elif result.comment_sentiment:
+                    st.warning(f"Comment analysis: {result.comment_sentiment.summary}")
 
             with right_col:
                 # Title Suggestions
@@ -193,6 +240,8 @@ if validate_btn and keyword and VALIDATOR_AVAILABLE:
                             st.write(f"**Why it works:** {title.reason}")
                             st.write(f"**Est. CTR:** {title.estimated_ctr.upper()}")
                             st.write(f"**SEO Score:** {title.seo_score}/10")
+                else:
+                    st.info("No title suggestions. Check AI API key.")
 
                 # Decision Details
                 if result.decision:
@@ -220,16 +269,17 @@ if validate_btn and keyword and VALIDATOR_AVAILABLE:
                     st.write(f"**📋 Summary:** {result.decision.summary}")
 
         except Exception as e:
-            st.error(f"Validation failed: {e}")
+            st.error(f"❌ Validation failed: {e}")
             import traceback
             st.code(traceback.format_exc())
 
 elif validate_btn and not keyword:
     st.warning("Please enter a keyword/video idea to validate")
 
-elif not VALIDATOR_AVAILABLE:
-    st.error("Video Validator not available. Check imports.")
+elif validate_btn and not VALIDATOR_AVAILABLE:
+    st.error("Video Validator not available. Check imports above.")
 
 # Footer
 st.markdown("---")
-st.caption("🎬 Video Validator | Powered by Apify + Gemini AI")
+ai_info = "Claude" if anthropic_key else ("Gemini" if gemini_key else "No AI")
+st.caption(f"🎬 Video Validator | Powered by Apify + {ai_info}")
