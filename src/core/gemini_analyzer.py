@@ -56,7 +56,7 @@ class GeminiAnalyzer:
     Free tier: 1,500 requests/day with Gemini 1.5 Flash
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.0-flash"):
         """
         Initialize the Gemini analyzer.
 
