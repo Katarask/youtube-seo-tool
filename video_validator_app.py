@@ -5,6 +5,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Support Streamlit Cloud secrets
+def get_secret(key: str) -> str:
+    """Get secret from Streamlit Cloud or .env file."""
+    # Try Streamlit secrets first (for Streamlit Cloud)
+    try:
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    # Fall back to environment variable
+    return os.getenv(key, "")
+
 st.set_page_config(
     page_title="Video Validator - Should I Make This Video?",
     page_icon="🎬",
@@ -77,9 +89,17 @@ if import_error:
 
 # Sidebar - Status
 st.sidebar.header("🔌 API Status")
-apify_key = os.getenv("APIFY_API_KEY")
-anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-gemini_key = os.getenv("GEMINI_API_KEY")
+apify_key = get_secret("APIFY_API_KEY")
+anthropic_key = get_secret("ANTHROPIC_API_KEY")
+gemini_key = get_secret("GEMINI_API_KEY")
+
+# Set environment variables for modules that use os.getenv()
+if apify_key:
+    os.environ["APIFY_API_KEY"] = apify_key
+if anthropic_key:
+    os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+if gemini_key:
+    os.environ["GEMINI_API_KEY"] = gemini_key
 
 st.sidebar.write("**Apify:**", "✅ Connected" if apify_key else "❌ Missing APIFY_API_KEY")
 

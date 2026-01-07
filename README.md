@@ -2,6 +2,19 @@
 
 Ein datengetriebenes Keyword-Research-Tool für YouTube, das **Nachfrage vs. Angebot** analysiert und die besten Content-Gelegenheiten identifiziert.
 
+## 🎬 VIDEO VALIDATOR - "Should I make this video?"
+
+Das Herzstück des Tools: Eine KI-gestützte Entscheidungshilfe für YouTuber.
+
+**Features:**
+- **Gap Score Analyse** - Demand vs Supply für dein Keyword
+- **Top Videos Scraping** - Analysiert die Top 10 Videos via Apify
+- **Comment Sentiment Analysis** - Was sagen die Zuschauer? Pain Points, Wünsche, Fragen
+- **AI Title Suggestions** - SEO-optimierte Titel-Vorschläge mit CTR-Schätzung
+- **Go/No-Go Empfehlung** - KI-basierte Entscheidung mit Begründung
+
+**Live Demo:** [Streamlit Cloud](https://share.streamlit.io) (nach Deployment)
+
 ## 🚀 Features
 
 - **YouTube Autocomplete Scraping** - Finde Long-Tail Keywords
@@ -9,6 +22,7 @@ Ein datengetriebenes Keyword-Research-Tool für YouTube, das **Nachfrage vs. Ang
 - **Google Trends Integration** - YouTube-spezifische Trend-Daten
 - **Gap Score Berechnung** - Automatische Opportunity-Bewertung
 - **Notion Export** - Ergebnisse direkt in deine Notion-Datenbank
+- **Video Validator UI** - Streamlit Web-App für schnelle Validierung
 
 ## 📊 Der Gap Score
 
@@ -130,6 +144,25 @@ youtube-seo-tool/
 | YouTube Data API | 10,000 units/Tag | Search: 100 units |
 | Google Trends | ~1,400 requests/Tag | Kostenlos |
 | Notion API | 3 requests/sec | Kostenlos |
+| Apify | Pay per use | ~$5/1000 Videos |
+| Claude API | Pay per use | ~$0.25/1M tokens (Haiku) |
+| Gemini API | 1,500 req/Tag | Kostenlos (Free Tier) |
+
+## 🌐 Deployment auf Streamlit Cloud
+
+1. **Fork/Push** dieses Repo auf GitHub
+2. Gehe zu [share.streamlit.io](https://share.streamlit.io)
+3. Klicke "New app" und wähle:
+   - Repository: `your-username/youtube-seo-tool`
+   - Branch: `main`
+   - Main file: `video_validator_app.py`
+4. Unter "Advanced settings" → "Secrets" füge hinzu:
+   ```toml
+   APIFY_API_KEY = "dein_apify_key"
+   ANTHROPIC_API_KEY = "dein_claude_key"
+   GEMINI_API_KEY = "dein_gemini_key"
+   ```
+5. Klicke "Deploy!"
 
 ## 🤝 Contributing
 
