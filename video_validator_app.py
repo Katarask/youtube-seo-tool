@@ -49,12 +49,12 @@ st.markdown("""
 
 # Import after config
 try:
-    from src.core.video_validator import VideoValidator, VideoValidationResult
+    from src.core.video_validator import VideoValidator, VideoValidationResult, AI_PROVIDER
     from src.core.apify_scraper import APIFY_AVAILABLE
-    from src.core.gemini_analyzer import GEMINI_AVAILABLE
     VALIDATOR_AVAILABLE = True
 except ImportError as e:
     VALIDATOR_AVAILABLE = False
+    AI_PROVIDER = "none"
     st.error(f"Import error: {e}")
 
 st.markdown('<p class="big-title">🎬 VIDEO VALIDATOR</p>', unsafe_allow_html=True)
@@ -63,10 +63,16 @@ st.markdown("*Should I make this video? Get AI-powered insights before you inves
 # Sidebar - Status
 st.sidebar.header("🔌 API Status")
 apify_key = os.getenv("APIFY_API_KEY")
+anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 gemini_key = os.getenv("GEMINI_API_KEY")
 
 st.sidebar.write("**Apify:**", "✅ Connected" if apify_key else "❌ Missing key")
-st.sidebar.write("**Gemini:**", "✅ Connected" if gemini_key else "❌ Missing key")
+if anthropic_key:
+    st.sidebar.write("**Claude:**", "✅ Connected")
+elif gemini_key:
+    st.sidebar.write("**Gemini:**", "✅ Connected")
+else:
+    st.sidebar.write("**AI:**", "❌ Missing key (ANTHROPIC_API_KEY or GEMINI_API_KEY)")
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Settings")

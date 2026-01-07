@@ -5,8 +5,9 @@ from .youtube_api import YouTubeAPI, get_youtube_api
 from .trends import TrendsAPI, get_youtube_trends, PYTRENDS_AVAILABLE
 from .analyzer import KeywordAnalyzer, analyze_keyword, find_opportunities
 from .apify_scraper import ApifyScraper, ScrapedVideo, APIFY_AVAILABLE
-from .gemini_analyzer import GeminiAnalyzer, CommentSentiment, TitleSuggestion, VideoDecision, GEMINI_AVAILABLE
-from .video_validator import VideoValidator, VideoValidationResult, validate_video_idea
+from .gemini_analyzer import GeminiAnalyzer, GEMINI_AVAILABLE
+from .claude_analyzer import ClaudeAnalyzer, CommentSentiment, TitleSuggestion, VideoDecision, CLAUDE_AVAILABLE
+from .video_validator import VideoValidator, VideoValidationResult, validate_video_idea, AI_PROVIDER
 
 __all__ = [
     "AutocompleteScraper",
@@ -23,14 +24,17 @@ __all__ = [
     "ApifyScraper",
     "ScrapedVideo",
     "APIFY_AVAILABLE",
-    # Gemini AI
+    # AI Analyzers
     "GeminiAnalyzer",
+    "GEMINI_AVAILABLE",
+    "ClaudeAnalyzer",
+    "CLAUDE_AVAILABLE",
     "CommentSentiment",
     "TitleSuggestion",
     "VideoDecision",
-    "GEMINI_AVAILABLE",
     # Video Validator
     "VideoValidator",
     "VideoValidationResult",
     "validate_video_idea",
+    "AI_PROVIDER",
 ]

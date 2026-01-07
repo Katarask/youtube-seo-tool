@@ -5,13 +5,26 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 from .apify_scraper import ApifyScraper, ScrapedVideo, APIFY_AVAILABLE
-from .gemini_analyzer import (
-    GeminiAnalyzer,
-    CommentSentiment,
-    TitleSuggestion,
-    VideoDecision,
-    GEMINI_AVAILABLE
-)
+
+# Try Claude first, fall back to Gemini
+try:
+    from .claude_analyzer import (
+        ClaudeAnalyzer as AIAnalyzer,
+        CommentSentiment,
+        TitleSuggestion,
+        VideoDecision,
+        CLAUDE_AVAILABLE as AI_AVAILABLE
+    )
+    AI_PROVIDER = "claude"
+except ImportError:
+    from .gemini_analyzer import (
+        GeminiAnalyzer as AIAnalyzer,
+        CommentSentiment,
+        TitleSuggestion,
+        VideoDecision,
+        GEMINI_AVAILABLE as AI_AVAILABLE
+    )
+    AI_PROVIDER = "gemini"
 from .analyzer import KeywordAnalyzer
 from ..data.models import KeywordAnalysis
 
@@ -154,13 +167,14 @@ class VideoValidator:
             except Exception as e:
                 print(f"⚠️  Apify not available: {e}")
 
-        # Initialize Gemini analyzer
-        self.gemini = None
-        if GEMINI_AVAILABLE:
+        # Initialize AI analyzer (Claude or Gemini)
+        self.ai = None
+        if AI_AVAILABLE:
             try:
-                self.gemini = GeminiAnalyzer(gemini_key)
+                self.ai = AIAnalyzer()
+                print(f"✅ Using {AI_PROVIDER.upper()} for AI analysis")
             except Exception as e:
-                print(f"⚠️  Gemini not available: {e}")
+                print(f"⚠️  AI analyzer not available: {e}")
 
         # Initialize keyword analyzer (uses YouTube API)
         try:
@@ -240,11 +254,11 @@ class VideoValidator:
             except Exception as e:
                 print(f"   ⚠️  Video scraping failed: {e}")
 
-        # Step 3: Analyze comments with Gemini
-        if self.gemini and all_comments:
+        # Step 3: Analyze comments with AI
+        if self.ai and all_comments:
             print("💬 Analyzing comment sentiment...")
             try:
-                result.comment_sentiment = self.gemini.analyze_comments_sentiment(
+                result.comment_sentiment = self.ai.analyze_comments_sentiment(
                     all_comments,
                     keyword=keyword
                 )
@@ -253,11 +267,11 @@ class VideoValidator:
                 print(f"   ⚠️  Sentiment analysis failed: {e}")
 
         # Step 4: Generate title suggestions
-        if self.gemini and generate_titles:
+        if self.ai and generate_titles:
             print("🎯 Generating title suggestions...")
             try:
                 existing_titles = [v["title"] for v in result.top_videos]
-                result.title_suggestions = self.gemini.generate_title_suggestions(
+                result.title_suggestions = self.ai.generate_title_suggestions(
                     keyword,
                     existing_titles=existing_titles
                 )
@@ -266,10 +280,10 @@ class VideoValidator:
                 print(f"   ⚠️  Title generation failed: {e}")
 
         # Step 5: Make final decision
-        if self.gemini:
+        if self.ai:
             print("🤔 Making final recommendation...")
             try:
-                result.decision = self.gemini.make_video_decision(
+                result.decision = self.ai.make_video_decision(
                     keyword=keyword,
                     gap_score=result.gap_score,
                     top_videos=result.top_videos,
